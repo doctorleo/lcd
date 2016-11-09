@@ -50,8 +50,10 @@ reset_handler:
 
     /* 初始化 USR 栈 */
 
-    BL      clr_bss
-    @ BL      clear_bss
+    @ BL      clr_bss
+    LDR     R0, =_bss_start
+    LDR     R1, =_bss_end
+    BL      clear_bss
 
 
     BL      main
@@ -66,7 +68,7 @@ __die:
      * Note: start_r0 < end_r1
      * clobber registers: R1(backup: end address), R2-R11,
      */
-    .global clr_bss1
+    @ .global clr_bss1
     .align 3
 clr_bss1:
     STMFD   SP!, {R1-R11, LR}
@@ -147,6 +149,19 @@ __pad_zeros_4:
     .word   0, 0
 __pad_zeros_2:
     .word   0, 0
+
+
+
+    /* unsigned int <cnt_r0> clear_bss(unsigned int start_r0, unsigned  int end_not_include_r1); */
+    .global clear_bss
+    .align 3
+clear_bss:
+    STMFD   SP!, {FP, LR}
+    SUBS    R2, R1, R0
+    BLS     1f
+    BL      clr_bss1
+    MOV     R0, R2
+1:  LDMFD   SP!, {FP, PC}
 
     .global clr_bss
     .align 3
