@@ -71,61 +71,74 @@ __die:
 clr_bss1:
     STMFD   SP!, {R1-R11, LR}
 
-1:  ANDS    R2, R0, #8
-    BEQ     __start_align_8_b
-    ANDS    R2, R0, #4
-    BEQ     __start_align_4_b
-    ANDS    R2, R0, #2
-    BEQ     __start_align_2_b
-    MOV     R2, #0x0
-
-2:  CMP     R0, R1
-    STRCCB  R2, [R0], #0x1
-    BCC     1b
-3:  LDMFD   SP!, {R1-R11, PC}
-
-__start_align_2_b:
-__start_align_4_b:
-__start_align_8_b:
-_start_align:
     LDR     R2, =__pad_zeros_8
     LDMIA   R2, {R4-R11}
 
-4:  SUBS    R2, R1, R0
-    BLS     3b
+1:  SUBS    R2, R1, R0
+    BLS     3f
     CMP     R2, #32
-    BCS     _start_align_32
+    BCS     __start_align_32_b
     CMP     R2, #16
-    BCS     _start_align_16
+    BCS     __start_align_16_b
     CMP     R2, #8
-    BCS     _start_align_8
+    BCS     __start_align_8_b
     CMP     R2, #4
-    BEQ     _start_align_4
+    BCS     __start_align_4_b
     CMP     R2, #2
-    BCS     _start_align_2
+    BCS     __start_align_2_b
+
+2:  @ MOV     R4, #0x0
+    CMP     R0, R1
+    STRCCB  R4, [R0], #0x1
+    BCC     1b
+3:  LDMFD   SP!, {R1-R11, PC}
+
+__start_align_32_b:
+__start_align_16_b:
+__start_align_8_b:
+__start_align_4_b:
+    TST    R0, #3
+    BEQ     __start_addr_align_4
+__start_align_2_b:
+    TST    R0, #1
+    BEQ     __start_addr_align_2
     B       2b
 
+__start_addr_align_4:
+    CMP     R2, #32
+    BCS     __start_a4_cnt32
+    CMP     R2, #16
+    BCS     __start_a4_cnt16
+    CMP     R2, #8
+    BCS     __start_a4_cnt8
+    CMP     R2, #4
+    BCS     __start_a4_cnt4
 
-5:  CMP     R0, R1
-    BCS     3b
-    B       4b
-
-_start_align_32:
-    STMIA   R0!, {R4-R11}
-    B       5b
-_start_align_16:
-    STMIA   R0!, {R4-R7}
-    B       5b
-_start_align_8:
-    STMIA   R0!, {R4-R5}
-    B       5b
-_start_align_4:
-    STMIA   R0!, {R4}
-    B       5b
-_start_align_2:
+    CMP     R2, #2
+    BCS     __start_addr_align_2
+    B       1b
+__start_addr_align_2:
     STRH    R4, [R0]
     ADD     R0, R0, #0x2
-    B       5b
+    @ B       4b
+
+
+4:  SUBS    R2, R1, R0
+    BLS     3b
+    B       __start_addr_align_4
+
+__start_a4_cnt4:
+    STMIA   R0!, {R4}
+    B       4b
+__start_a4_cnt8:
+    STMIA   R0!, {R4-R5}
+    B       4b
+__start_a4_cnt16:
+    STMIA   R0!, {R4-R7}
+    B       4b
+__start_a4_cnt32:
+    STMIA   R0!, {R4-R11}
+    B       4b
 
     .align 3
 __pad_zeros_8:
